@@ -125,7 +125,7 @@ int xjd1_stmt_delete(xjd1_stmt *pStmt){
   if( pStmt->pPrev ){
     pStmt->pPrev->pNext = pStmt->pNext;
   }else{
-    assert( pStmt->pConn->pStmt==pStmt );
+    //assert( pStmt->pConn->pStmt==pStmt ); wrong assumption
     pStmt->pConn->pStmt = pStmt->pNext;
   }
   if( pStmt->pNext ){
