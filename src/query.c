@@ -54,7 +54,7 @@ static int cmpResultItem(ResultItem *p1, ResultItem *p2, ExprList *pEList){
   int c = 0;
   int nEItem = (pEList ? pEList->nEItem : 1);
   for(i=0; i<nEItem; i++){
-    if( 0!=(c=xjd1JsonCompare(p1->apKey[i], p2->apKey[i])) ) break;
+    if( 0!=(c=xjd1JsonCompare(p1->apKey[i], p2->apKey[i], 0)) ) break;
   }
   if( c && pEList ){
     char const *zDir = pEList->apEItem[i].zAs;
@@ -215,7 +215,7 @@ int xjd1QueryInit(
     if( !rc ){
       rc = xjd1ExprInit(p->u.simple.pHaving, pStmt, p, XJD1_EXPR_HAVING, pCtx);
     }
-    if( !rc && p->u.simple.pGroupBy ){ 
+    if( !rc && p->u.simple.pGroupBy ){
       rc = xjd1AggregateInit(pStmt, p, 0);
     }
   }else{
@@ -261,10 +261,10 @@ int xjd1QueryRewind(Query *p){
 }
 
 /*
-** Advance to the next row of the TK_SELECT query passed as the first 
+** Advance to the next row of the TK_SELECT query passed as the first
 ** argument, disregarding any ORDER BY, OFFSET or LIMIT clause.
 **
-** Return XJD1_ROW if there is such a row, or XJD1_DONE at EOF. Or return 
+** Return XJD1_ROW if there is such a row, or XJD1_DONE at EOF. Or return
 ** an error code if an error occurs.
 */
 static int selectStepWhered(Query *p){
@@ -289,9 +289,9 @@ static int selectStepGrouped(Query *p){
     rc = XJD1_OK;
     if( pGroupBy==0 ){
       /* An aggregate query with no GROUP BY clause. If there is no GROUP BY,
-      ** then exactly one row is returned, which makes ORDER BY and DISTINCT 
+      ** then exactly one row is returned, which makes ORDER BY and DISTINCT
       ** no-ops. And it is not possible to have a HAVING clause without a
-      ** GROUP BY, so no need to worry about that either. 
+      ** GROUP BY, so no need to worry about that either.
       */
       assert( p->u.simple.pHaving==0 );
 
@@ -308,7 +308,7 @@ static int selectStepGrouped(Query *p){
         apSrc = (JsonNode **)xjd1PoolMallocZero(pPool, nSrc*sizeof(JsonNode *));
         if( !apSrc ) return XJD1_NOMEM;
 
-        /* Call the xStep() of each aggregate in the query for each row 
+        /* Call the xStep() of each aggregate in the query for each row
         ** matched by the query WHERE clause. */
         while( rc==XJD1_OK && XJD1_ROW==(rc = selectStepWhered(p) ) ){
           int saveThisRow = 0;
@@ -333,10 +333,10 @@ static int selectStepGrouped(Query *p){
       }else{
         rc = XJD1_DONE;
       }
-      
+
       /* TODO: If this is a top-level query, then xQueryDoc(p, 0) will be
-      ** called exactly once to retrieve the query result. When any 
-      ** aggregate expressions within the query result are evaluated, the 
+      ** called exactly once to retrieve the query result. When any
+      ** aggregate expressions within the query result are evaluated, the
       ** xFinal function is evaluated. But this will only work once - if
       ** xQueryDoc(p, 0) is called more than once it will break. Find out if
       ** this is a problem!
@@ -353,13 +353,13 @@ static int selectStepGrouped(Query *p){
       ** clause. */
       do {
         ResultItem *pItem;
-  
+
         if( p->u.simple.grouped.pPool==0 ){
           DataSrc *pFrom = p->u.simple.pFrom;
           JsonNode **apKey;
           int nByte;
           Pool *pPool;
-  
+
           /* Allocate the memory pool for this ResultList. And apKey. */
           pPool = p->u.simple.grouped.pPool = xjd1PoolNew();
           p->u.simple.grouped.nKey = pGroupBy->nEItem + xjd1DataSrcCount(pFrom);
@@ -367,7 +367,7 @@ static int selectStepGrouped(Query *p){
           nByte = p->u.simple.grouped.nKey * sizeof(JsonNode *);
           apKey = (JsonNode **)xjd1PoolMallocZero(pPool, nByte);
           if( !apKey ) return XJD1_NOMEM;
-  
+
           while( rc==XJD1_OK && XJD1_ROW==(rc = selectStepWhered(p) ) ){
             int i;
             for(i=0; i<pGroupBy->nEItem; i++){
@@ -382,7 +382,7 @@ static int selectStepGrouped(Query *p){
         }else{
           popResultList(&p->u.simple.grouped);
         }
-  
+
         p->eDocFrom = XJD1_FROM_GROUPED;
         pItem = p->u.simple.grouped.pItem;
         if( pItem==0 ){
@@ -406,7 +406,7 @@ static int selectStepGrouped(Query *p){
           }
         }
 
-      }while( rc==XJD1_ROW 
+      }while( rc==XJD1_ROW
            && p->u.simple.pHaving && !xjd1ExprTrue(p->u.simple.pHaving)
       );
     }
@@ -507,18 +507,18 @@ static int selectStepCompounded(Query *p){
 
       ResultList *p1;
       ResultList *p2;
-  
+
       if( p->u.compound.left.pPool==0 ){
         rc = cacheQuery(&p->u.compound.left, p->u.compound.pLeft);
         if( rc!=XJD1_OK ) return rc;
         rc = cacheQuery(&p->u.compound.right, p->u.compound.pRight);
         if( rc!=XJD1_OK ) return rc;
       }
-  
+
       p1 = &p->u.compound.left;
       p2 = &p->u.compound.right;
       rc = XJD1_DONE;
-  
+
       switch( p->eQType ){
         case TK_UNION: {
           if( (p1->pItem || p2->pItem) ){
@@ -530,7 +530,7 @@ static int selectStepCompounded(Query *p){
             }else{
               c = cmpResultItem(p1->pItem, p2->pItem, 0);
             }
-            
+
             if( c<0 ){
               pOut = xjd1JsonRef(p1->pItem->apKey[0]);
             }else{
@@ -542,7 +542,7 @@ static int selectStepCompounded(Query *p){
           }
           break;
         }
-  
+
         case TK_INTERSECT:
           while( rc==XJD1_DONE && p1->pItem && p2->pItem ){
             int c = cmpResultItem(p1->pItem, p2->pItem, 0);
@@ -554,7 +554,7 @@ static int selectStepCompounded(Query *p){
             if( c>=0 ) popResultList(p2);
           }
           break;
-  
+
         case TK_EXCEPT:
           while( rc==XJD1_DONE && p1->pItem ){
             int c = p2->pItem ? cmpResultItem(p1->pItem, p2->pItem, 0) : -1;
@@ -579,10 +579,10 @@ static int selectStepCompounded(Query *p){
 }
 
 /*
-** Advance to the next row of the TK_SELECT query passed as the first 
+** Advance to the next row of the TK_SELECT query passed as the first
 ** argument, disregarding any OFFSET or LIMIT clause.
 **
-** Return XJD1_ROW if there is such a row, or XJD1_EOF if there is not. Or 
+** Return XJD1_ROW if there is such a row, or XJD1_EOF if there is not. Or
 ** return an error code if an error occurs.
 */
 static int selectStepOrdered(Query *p){
