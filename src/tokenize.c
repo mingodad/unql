@@ -39,7 +39,7 @@
 **
 **   (x & ~(map[x]&0x20))
 **
-** Bit 0x40 is set if the character non-alphanumeric and can be used in an 
+** Bit 0x40 is set if the character non-alphanumeric and can be used in an
 ** identifier.  Identifiers are alphanumerics, "_" and any
 ** non-ASCII UTF character. Hence the test for whether or not a character is
 ** part of an identifier is 0x46.
@@ -137,17 +137,17 @@ static int keywordCode(const char *z, int n){
      163, 168, 173, 178, 179, 183, 189, 197, 206, 209, 212, 217,
   };
   static const unsigned char aCode[51] = {
-    TK_BEGIN,      TK_INTO,       TK_ORDER,      TK_ROLLBACK,   TK_ELSE,       
-    TK_SELECT,     TK_GROUP,      TK_UPDATE,     TK_FLATTENOP,  TK_HAVING,     
-    TK_LIKEOP,     TK_BY,         TK_WITHIN,     TK_INSERT,     TK_ALL,        
-    TK_LIKEOP,     TK_EXISTS,     TK_ASCENDING,  TK_ASCENDING,  TK_ASYNC,      
-    TK_ASYNC,      TK_AS,         TK_SYNC,       TK_SYNC,       TK_COLLATE,    
-    TK_EXCEPT,     TK_COLLECTION, TK_NULL,       TK_LIMIT,      TK_CREATE,     
-    TK_DELETE,     TK_DESCENDING, TK_DESCENDING, TK_DROP,       TK_PRAGMA,     
-    TK_FLATTENOP,  TK_NOT,        TK_IF,         TK_FROM,       TK_UNION,      
-    TK_VALUE,      TK_WHERE,      TK_IN,         TK_NULL,       TK_COMMIT,     
-    TK_DISTINCT,   TK_INTERSECT,  TK_OFFSET,     TK_SET,        TK_FALSE,      
-    TK_TRUE,       
+    TK_BEGIN,      TK_INTO,       TK_ORDER,      TK_ROLLBACK,   TK_ELSE,
+    TK_SELECT,     TK_GROUP,      TK_UPDATE,     TK_FLATTENOP,  TK_HAVING,
+    TK_LIKEOP,     TK_BY,         TK_WITHIN,     TK_INSERT,     TK_ALL,
+    TK_LIKEOP,     TK_EXISTS,     TK_ASCENDING,  TK_ASCENDING,  TK_ASYNC,
+    TK_ASYNC,      TK_AS,         TK_SYNC,       TK_SYNC,       TK_COLLATE,
+    TK_EXCEPT,     TK_COLLECTION, TK_NULL,       TK_LIMIT,      TK_CREATE,
+    TK_DELETE,     TK_DESCENDING, TK_DESCENDING, TK_DROP,       TK_PRAGMA,
+    TK_FLATTENOP,  TK_NOT,        TK_IF,         TK_FROM,       TK_UNION,
+    TK_VALUE,      TK_WHERE,      TK_IN,         TK_NULL,       TK_COMMIT,
+    TK_DISTINCT,   TK_INTERSECT,  TK_OFFSET,     TK_SET,        TK_FALSE,
+    TK_TRUE,
   };
   int h, i;
   if( n<2 ) return TK_ID;
@@ -165,7 +165,7 @@ static int keywordCode(const char *z, int n){
 *********************************************************************/
 
 /*
-** Return the length of the token that begins at z[0]. 
+** Return the length of the token that begins at z[0].
 ** Store the token type in *tokenType before returning.
 */
 int xjd1GetToken(const unsigned char *z, int *tokenType){
@@ -325,13 +325,23 @@ int xjd1GetToken(const unsigned char *z, int *tokenType){
     }
     case '"': {
       int delim = z[0];
-      for(i=1; (c=z[i])!=0; i++){
-        if( c==delim ){
-          if( z[i+1]==delim ){
-            i++;
-          }else{
+      for(i=1; (c=z[i])!=0; ++i){
+        if(c == '\\'){
+            switch(z[i+1])
+            {
+            case '\\':
+            case '"':
+            case 'n':
+            case 'r':
+            case 'f':
+            case 't':
+            case 'b':
+                    ++i;
+                break;
+            }
+        }
+        if( c==delim ) {
             break;
-          }
         }
       }
       *tokenType = TK_STRING;
@@ -355,7 +365,7 @@ int xjd1GetToken(const unsigned char *z, int *tokenType){
         *tokenType = TK_FLOAT;
       }
       if( (z[i]=='e' || z[i]=='E') &&
-           ( xjd1Isdigit(z[i+1]) 
+           ( xjd1Isdigit(z[i+1])
             || ((z[i+1]=='+' || z[i+1]=='-') && xjd1Isdigit(z[i+2]))
            )
       ){
@@ -382,14 +392,14 @@ int xjd1GetToken(const unsigned char *z, int *tokenType){
   return 1;
 }
 
-static void *parserAlloc(size_t N){ 
-  return xjd1_malloc((int)N); 
+static void *parserAlloc(size_t N){
+  return xjd1_malloc((int)N);
 }
 
 /*
 ** Run the parser on the given SQL string.  The parser structure is
 ** passed in.  An SQLITE_ status code is returned.  If an error occurs
-** then an and attempt is made to write an error message into 
+** then an and attempt is made to write an error message into
 ** memory obtained from xjd1_malloc() and to make *pzErrMsg point to that
 ** error message.
 */
