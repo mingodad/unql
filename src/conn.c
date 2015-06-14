@@ -21,31 +21,43 @@
 /*
 ** Open a new database connection
 */
-int xjd1_open(xjd1_context *pContext, const char *zURI, xjd1 **ppNewConn){
+int xjd1_open_with_db(xjd1_context *pContext, sqlite3 *db, xjd1 **ppNewConn){
   xjd1 *pConn;
-  int rc;
 
   *ppNewConn = pConn = xjd1_malloc( sizeof(*pConn) );
   if( pConn==0 ) return XJD1_NOMEM;
   memset(pConn, 0, sizeof(*pConn));
   pConn->pContext = pContext;
-  rc = sqlite3_open_v2(zURI, &pConn->db, 
+  pConn->db = db;
+  pConn->isSQLite3Borrowed = 1;
+  return XJD1_OK;
+}
+
+int xjd1_open(xjd1_context *pContext, const char *zURI, xjd1 **ppNewConn){
+  sqlite3 *db;
+  int rc;
+
+  rc = sqlite3_open_v2(zURI, &db,
             SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_URI, 0);
   if( rc ){
-    xjd1Error(pConn, XJD1_ERROR, "%s", sqlite3_errmsg(pConn->db));
-    sqlite3_close(pConn->db);
-    pConn->db = 0;
-    return XJD1_ERROR;
-  }else{
-    return XJD1_OK;
+    sqlite3_close(db);
+    return XJD1_ERROR_OPEN_DB;
   }
+  rc = xjd1_open_with_db(pContext, db, ppNewConn);
+  if(rc != XJD1_OK){
+    sqlite3_close(db);
+    return rc;
+  }
+  (*ppNewConn)->isSQLite3Borrowed = 0;
+  return rc;
 }
+
 
 /* Configure a database connection */
 int xjd1_config(xjd1 *pConn, int op, ...){
   int rc = XJD1_UNKNOWN;
   va_list ap;
-  va_start(ap, op); 
+  va_start(ap, op);
   switch( op ){
     case XJD1_CONFIG_PARSERTRACE: {
       pConn->parserTrace = va_arg(ap, int);
@@ -69,7 +81,7 @@ int xjd1_close(xjd1 *pConn){
   pConn->isDying = 1;
   if( pConn->nRef>0 ) return XJD1_OK;
   xjd1ContextUnref(pConn->pContext);
-  sqlite3_close(pConn->db);
+  if(!pConn->isSQLite3Borrowed) sqlite3_close(pConn->db);
   xjd1StringClear(&pConn->errMsg);
   xjd1_free(pConn);
   return XJD1_OK;
