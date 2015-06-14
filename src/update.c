@@ -50,7 +50,7 @@ static JsonNode *findStructElement(JsonNode *pBase, const char *zField){
   pBase->u.st.pLast = pElem;
   pElem->zLabel = xjd1PoolDup(0, zField, -1);
   pElem->pValue = xjd1JsonNew(0);
-  return pElem->pValue;  
+  return pElem->pValue;
 }
 
 /*
@@ -79,7 +79,7 @@ static JsonNode *findOrCreateJsonNode(JsonNode *pRoot, Expr *p){
     **
     ** If x is of any other type the assignment is silently ignored.
     ** Note that individual string characters can be read, but not
-    ** written using the x[y] syntax. 
+    ** written using the x[y] syntax.
     ** TBD: should x===null throw an error?
     */
     case TK_LB: {
@@ -108,7 +108,7 @@ static JsonNode *findOrCreateJsonNode(JsonNode *pRoot, Expr *p){
               int i;
               /* Grow the array as needed. TBD: find a way to handle very
               ** large, sparse arrays. As a temporary drafting precaution,
-              ** assert that the value of iIdx is less than 1024. 
+              ** assert that the value of iIdx is less than 1024.
               */
               assert( iIdx<1024 );
               pNewArray = xjd1_realloc(pBase->u.ar.apElem, sizeof(JsonNode*)*(iIdx+1));
@@ -132,7 +132,7 @@ static JsonNode *findOrCreateJsonNode(JsonNode *pRoot, Expr *p){
       }
     }
     break;
-      
+
     case TK_ID: {
       return pRoot;
     }
@@ -171,12 +171,11 @@ int xjd1UpdateStep(xjd1_stmt *pStmt){
   sqlite3 *db = pStmt->pConn->db;
   sqlite3_stmt *pQuery, *pReplace;
   char *zSql;
+  int inAutocommit = sqlite3_get_autocommit(db);
 
   assert( pCmd!=0 );
   assert( pCmd->eCmdType==TK_UPDATE );
-  if( pCmd->u.update.pUpsert ){
-    sqlite3_exec(db, "BEGIN", 0, 0, 0);
-  }
+  if(inAutocommit) sqlite3_exec(db, "BEGIN", 0, 0, 0);
   zSql = sqlite3_mprintf("SELECT rowid, x FROM \"%w\"", pCmd->u.update.zName);
   sqlite3_prepare_v2(db, zSql, -1, &pQuery, 0);
   sqlite3_free(zSql);
@@ -215,7 +214,7 @@ int xjd1UpdateStep(xjd1_stmt *pStmt){
       }
       xjd1JsonFree(pStmt->pDoc);
       pStmt->pDoc = 0;
-    }  
+    }
   }
   sqlite3_finalize(pQuery);
   sqlite3_finalize(pReplace);
@@ -225,7 +224,7 @@ int xjd1UpdateStep(xjd1_stmt *pStmt){
       JsonNode *pToIns;
       String jsonToIns;
       pToIns = xjd1ExprEval(pCmd->u.update.pUpsert);
-      xjd1StringInit(&jsonToIns, 0, 0); 
+      xjd1StringInit(&jsonToIns, 0, 0);
       xjd1JsonRender(&jsonToIns, pToIns);
       xjd1JsonFree(pToIns);
       zSql = sqlite3_mprintf(
@@ -235,7 +234,7 @@ int xjd1UpdateStep(xjd1_stmt *pStmt){
       sqlite3_exec(db, zSql, 0, 0, 0);
       sqlite3_free(zSql);
     }
-    sqlite3_exec(db, "COMMIT", 0, 0, 0);
   }
+  if(inAutocommit) sqlite3_exec(db, "COMMIT", 0, 0, 0);
   return rc;
 }

@@ -26,22 +26,26 @@
 int xjd1DeleteStep(xjd1_stmt *pStmt){
   Command *pCmd = pStmt->pCmd;
   int rc = XJD1_OK;
+  int inAutocommit;
   sqlite3 *db;
   sqlite3_stmt *pQuery = 0;
   sqlite3_stmt *pIns = 0;
   char *zSql;
-  
+
   assert( pCmd!=0 );
   assert( pCmd->eCmdType==TK_DELETE );
   db = pStmt->pConn->db;
+  inAutocommit = sqlite3_get_autocommit(db);
   if( pCmd->u.del.pWhere==0 ){
     zSql = sqlite3_mprintf("DELETE FROM \"%w\"", pCmd->u.del.zName);
     sqlite3_exec(db, zSql, 0, 0, 0);
     sqlite3_free(zSql);
     return XJD1_OK;
   }
-  sqlite3_exec(db, "BEGIN; CREATE TEMP TABLE _t1(x INTEGER PRIMARY KEY)",
-               0, 0, 0);
+  zSql = sqlite3_mprintf("%sCREATE TEMP TABLE _t1(x INTEGER PRIMARY KEY)",
+            inAutocommit ? "BEGIN;" : "");
+  sqlite3_exec(db, zSql, 0, 0, 0);
+  sqlite3_free(zSql);
   zSql = sqlite3_mprintf("SELECT rowid, x FROM \"%w\"", pCmd->u.del.zName);
   sqlite3_prepare_v2(db, zSql, -1, &pQuery, 0);
   sqlite3_prepare_v2(db, "INSERT INTO _t1(x) VALUES(?1)", -1, &pIns, 0);
@@ -63,7 +67,8 @@ int xjd1DeleteStep(xjd1_stmt *pStmt){
   sqlite3_free(zSql);
   zSql = sqlite3_mprintf(
             "DELETE FROM \"%w\" WHERE rowid IN _t1;"
-            "DROP TABLE _t1; COMMIT", pCmd->u.del.zName);
+            "DROP TABLE _t1;%s", pCmd->u.del.zName,
+            inAutocommit ? "COMMIT;" : "");
   sqlite3_exec(db, zSql, 0, 0, 0);
   sqlite3_free(zSql);
   return rc;
