@@ -18,7 +18,7 @@
 #include "xjd1Int.h"
 
 /*
-** A structure used to store the definition of a query language function 
+** A structure used to store the definition of a query language function
 ** or aggregate.
 */
 struct Function {
@@ -41,37 +41,37 @@ struct Function {
 **     this function returns a non-negative integer value.
 **
 **   min()
-**     This aggregate is invoked with exactly one argument. If no rows are 
-**     visited, NULL is returned. Otherwise, it returns a copy of the 
+**     This aggregate is invoked with exactly one argument. If no rows are
+**     visited, NULL is returned. Otherwise, it returns a copy of the
 **     smallest argument it is passed. The comparisons used to determine
 **     which argument is the smallest are performed using the same rules
 **     as for the < and > operators.
 **
 **   max()
-**     This aggregate is invoked with exactly one argument. If no rows are 
-**     visited, NULL is returned. Otherwise, it returns a copy of the 
+**     This aggregate is invoked with exactly one argument. If no rows are
+**     visited, NULL is returned. Otherwise, it returns a copy of the
 **     largest argument it is passed. The comparisons used to determine
 **     which argument is the largest are performed using the same rules
 **     as for the < and > operators.
 **
 **   array()
-**     This aggregate is invoked with exactly one argument. If no rows are 
+**     This aggregate is invoked with exactly one argument. If no rows are
 **     visited, an empty array is returned. Otherwise, an array containing
 **     the argument passed to this aggregate for each row visited is returned.
 **     The order in which the values appear in the returned array is not
 **     defined.
 **
 **   sum()
-**     This aggregate is invoked with exactly one argument. If no rows are 
+**     This aggregate is invoked with exactly one argument. If no rows are
 **     visited, the value 0.0 (a number) is returned. Otherwise, each argument
-**     is converted to a number and the sum of all converted arguments 
+**     is converted to a number and the sum of all converted arguments
 **     returned. Any value that cannot be converted to a number (i.e. a struct,
-**     an array or any string value that does not look like a number) is 
+**     an array or any string value that does not look like a number) is
 **     treated as 0.0.
 **
 **   avg()
 **     This aggregate is invoked with exactly one argument. If no rows are
-**     visited, NULL is returned. Otherwise, the expression avg(X) is 
+**     visited, NULL is returned. Otherwise, the expression avg(X) is
 **     equivalent to (sum(X)/count()).
 */
 
@@ -108,7 +108,7 @@ static int xMinStep(int nArg, JsonNode **apArg, void **pp, int *pbSave){
   JsonNode *pBest = *pp;
   assert( nArg==1 );
   pArg = apArg[0];
-  if( !pBest || xjd1JsonCompare(pArg, pBest)<0 ){
+  if( !pBest || xjd1JsonCompare(pArg, pBest, 0)<0 ){
     xjd1JsonFree(pBest);
     *pp = (void *)xjd1JsonRef(pArg);
     *pbSave = 1;
@@ -120,7 +120,7 @@ static int xMaxStep(int nArg, JsonNode **apArg, void **pp, int *pbSave){
   JsonNode *pBest = *pp;
   assert( nArg==1 );
   pArg = apArg[0];
-  if( !pBest || xjd1JsonCompare(pArg, pBest)>0 ){
+  if( !pBest || xjd1JsonCompare(pArg, pBest, 0)>0 ){
     xjd1JsonFree(pBest);
     *pp = (void *)xjd1JsonRef(pArg);
     *pbSave = 1;
@@ -276,7 +276,7 @@ static JsonNode *xLength(int nArg, JsonNode **apArg){
 
 int xjd1AggregateInit(xjd1_stmt *pStmt, Query *pQuery, Expr *p){
   Aggregate *pAgg;
- 
+
   assert( pQuery->eQType==TK_SELECT );
   pAgg = pQuery->u.simple.pAgg;
   if( pAgg==0 ){
@@ -292,16 +292,16 @@ int xjd1AggregateInit(xjd1_stmt *pStmt, Query *pQuery, Expr *p){
       int nByte;                    /* Size of new allocation in bytes */
       int nCopy;                    /* Size of old allocation in bytes */
       AggExpr *aNew;                /* Pointer to new allocation */
-     
+
       nByte = (pAgg->nExpr + ARRAY_ALLOC_INCR) * sizeof(AggExpr);
       nCopy = pAgg->nExpr * sizeof(AggExpr);
       aNew = (AggExpr *)xjd1PoolMallocZero(&pStmt->sPool, nByte);
-  
+
       if( aNew==0 ) return XJD1_NOMEM;
       memcpy(aNew, pAgg->aAggExpr, nCopy);
       pAgg->aAggExpr = aNew;
     }
-  
+
     p->u.func.iAgg = pAgg->nExpr;
     pAgg->aAggExpr[pAgg->nExpr++].pExpr = p;
   }
@@ -339,8 +339,8 @@ int xjd1FunctionInit(Expr *p, xjd1_stmt *pStmt, Query *pQuery, int eExpr){
 
   /* Set bAggOk to true if aggregate functions may be used in this context. */
   bAggOk = (pQuery && pQuery->eQType==TK_SELECT
-        && (eExpr==XJD1_EXPR_RESULT || eExpr==XJD1_EXPR_GROUPBY 
-         || eExpr==XJD1_EXPR_HAVING || eExpr==XJD1_EXPR_ORDERBY 
+        && (eExpr==XJD1_EXPR_RESULT || eExpr==XJD1_EXPR_GROUPBY
+         || eExpr==XJD1_EXPR_HAVING || eExpr==XJD1_EXPR_ORDERBY
   ));
 
   zName = p->u.func.zFName;
@@ -373,7 +373,7 @@ int xjd1FunctionInit(Expr *p, xjd1_stmt *pStmt, Query *pQuery, int eExpr){
 
   if( !p->u.func.pFunction ){
     if( bWrongNumArgs ){
-      xjd1StmtError(pStmt, XJD1_ERROR, 
+      xjd1StmtError(pStmt, XJD1_ERROR,
           "wrong number of arguments to function %s()", zName);
     }else{
       xjd1StmtError(pStmt, XJD1_ERROR, "no such function: %s", zName);
@@ -412,7 +412,7 @@ static int aggExprStep(AggExpr *pAggExpr, int *pbSave){
 }
 
 int xjd1AggregateStep(
-  Aggregate *pAgg, 
+  Aggregate *pAgg,
   int *pbSave                     /* OUT: True if this row should be saved */
 ){
   int i;                /* Used to iterate through aggregate functions */
@@ -440,7 +440,7 @@ int xjd1AggregateFinalize(Aggregate *pAgg){
 
 /*
 ** Call any outstanding xFinal() functions for aggregate functions in the
-** query. This is required to reset the aggregate contexts when a query is 
+** query. This is required to reset the aggregate contexts when a query is
 ** rewound following an error.
 */
 void xjd1AggregateClear(Query *pQuery){

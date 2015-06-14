@@ -53,7 +53,7 @@ void xjd1JsonToNull(JsonNode *p){
 }
 
 /*
-** Reclaim memory used by JsonNode objects 
+** Reclaim memory used by JsonNode objects
 */
 void xjd1JsonFree(JsonNode *p){
   if( p && (--p->nRef)<=0 ){
@@ -81,7 +81,7 @@ JsonNode *xjd1JsonNew(Pool *pPool){
 }
 
 /*
-** Increase the reference count on a JSON object.  
+** Increase the reference count on a JSON object.
 **
 ** The object is freed when its reference count reaches zero.
 */
@@ -317,7 +317,7 @@ int xjd1JsonToString(const JsonNode *p, String *pOut){
 ** Compare to JSON objects.  Return negative, zero, or positive if the
 ** first is less than, equal to, or greater than the second.
 */
-int xjd1JsonCompare(const JsonNode *pLeft, const JsonNode *pRight){
+int xjd1JsonCompare(const JsonNode *pLeft, const JsonNode *pRight, int insensitive){
   if( pLeft==0 ){
     return pRight ? -1 : 0;
   }
@@ -338,14 +338,15 @@ int xjd1JsonCompare(const JsonNode *pLeft, const JsonNode *pRight){
       return 0;
     }
     case XJD1_STRING: {
-      return strcmp(pLeft->u.z, pRight->u.z);
+      if(insensitive) return strcasecmp(pLeft->u.z, pRight->u.z);
+      else return strcmp(pLeft->u.z, pRight->u.z);
     }
     case XJD1_ARRAY: {
       int i, mx, c;
       mx = pLeft->u.ar.nElem;
       if( mx>pRight->u.ar.nElem ) mx = pRight->u.ar.nElem;
       for(i=0; i<mx; i++){
-        c = xjd1JsonCompare(pLeft->u.ar.apElem[i], pRight->u.ar.apElem[i]);
+        c = xjd1JsonCompare(pLeft->u.ar.apElem[i], pRight->u.ar.apElem[i], 0);
         if( c ) return c;
       }
       return pLeft->u.ar.nElem - pRight->u.ar.nElem;
@@ -357,7 +358,7 @@ int xjd1JsonCompare(const JsonNode *pLeft, const JsonNode *pRight){
       while( pA && pB ){
         c = strcmp(pA->zLabel, pB->zLabel);
         if( c ) return c;
-        c = xjd1JsonCompare(pA->pValue, pB->pValue);
+        c = xjd1JsonCompare(pA->pValue, pB->pValue, 0);
         if( c ) return c;
         pA = pA->pNext;
         pB = pB->pNext;
@@ -413,7 +414,7 @@ struct JsonStr {
 */
 static int isExp(const char *z, int n){
   if( n<2 ) return 0;
-  if( z[0]!='e' && z[0]!='E' ) return 0; 
+  if( z[0]!='e' && z[0]!='E' ) return 0;
   if( xjd1Isdigit(z[1]) ) return 1;
   if( n<3 || (z[1]!='-' && z[1]!='+') ) return 0;
   if( xjd1Isdigit(z[2]) ) return 1;
@@ -488,7 +489,7 @@ static void tokenNext(JsonStr *p){
       break;
     }
     case 'f': {
-      if( i+5<=mx && memcmp(&z[i],"false",5)==0 
+      if( i+5<=mx && memcmp(&z[i],"false",5)==0
        && (i+5==mx || xjd1Isident(z[i+5])==0)
       ){
         p->n = 5;
@@ -595,12 +596,12 @@ void xjd1DequoteString(char *z, int n){
 static char *tokenDequoteString(JsonStr *pIn){
   const char *zIn;
   char *zOut;
-  int n;
+  //int n;
   zIn = &pIn->zIn[pIn->iCur];
   zOut = xjd1_malloc( pIn->n );
   if( zOut==0 ) return 0;
   assert( zIn[0]=='"' && zIn[pIn->n-1]=='"' );
-  n = pIn->n-1;
+  //n = pIn->n-1;
   memcpy(zOut, zIn, pIn->n);
   xjd1DequoteString(zOut, pIn->n);
   return zOut;
@@ -625,7 +626,7 @@ static JsonNode *parseJson(JsonStr *pIn){
       while( 1 ){
         JsonStructElem *pElem;
         if( tokenType(pIn)!=JSON_STRING ){
-          goto json_error; 
+          goto json_error;
         }
         pElem = xjd1_malloc( sizeof(*pElem) );
         if( pElem==0 ) goto json_error;
@@ -676,7 +677,7 @@ static JsonNode *parseJson(JsonStr *pIn){
         }else{
           goto json_error;
         }
-      }     
+      }
       break;
     }
     case JSON_STRING: {
@@ -728,11 +729,11 @@ JsonNode *xjd1JsonParse(const char *zIn, int mxIn){
 ** It appends the contents of zIn to string pOut, making the following
 ** edits:
 **
-**   1. All white-space that appears inside of struct or array values 
-**      is removed. A single space characer is left between each top 
+**   1. All white-space that appears inside of struct or array values
+**      is removed. A single space characer is left between each top
 **      level value.
 **
-**   2. Double quotes are added to any unquoted sequences of alphabetic 
+**   2. Double quotes are added to any unquoted sequences of alphabetic
 **      characters (which are illegal in JSON).
 **
 ** For example, the following input:
@@ -778,7 +779,7 @@ int xjd1JsonTidy(String *pOut, const char *zIn){
 
 /*
 ** The JsonNode passed as the first argument must be of type XJD1_STRUCT.
-** This function adds a property to the object. The name of the new 
+** This function adds a property to the object. The name of the new
 ** property is passed as the second argument to this function. The third
 ** argument is used as the initial value. If the property already exists,
 ** it is replaced.

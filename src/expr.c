@@ -36,7 +36,7 @@ struct ResolveCtx {
 static int walkExpr(Expr*, int (*)(Expr *,void *), void *);
 
 /*
-** Walk an expression list 
+** Walk an expression list
 */
 static int walkExprList(ExprList *p, int (*xFunc)(Expr *,void *), void *pCtx){
   if( p ){
@@ -135,7 +135,7 @@ static int exprResolve(Expr *p, ResolveCtx *pCtx){
 
           /* Match against any 'AS' alias on the query result */
           if( bFound==0 && pQuery->zAs ){
-            if( eExpr==XJD1_EXPR_ORDERBY 
+            if( eExpr==XJD1_EXPR_ORDERBY
                 || eExpr==XJD1_EXPR_HAVING
                 || (eExpr==XJD1_EXPR_WHERE && pQuery->u.simple.pAgg==0)
               ){
@@ -190,7 +190,7 @@ static int walkInitCallback(Expr *p, void *pArg){
     default:
       break;
   }
-  
+
   return rc;
 }
 
@@ -275,7 +275,7 @@ static int isStr(const JsonNode *p){
 }
 
 /*
-** Return non-zero if the JSON object passed should be considered TRUE in a 
+** Return non-zero if the JSON object passed should be considered TRUE in a
 ** boolean context. For example in the result of a WHERE or HAVING clause.
 **
 ** XJD1 uses the same rules as Javascript does to determine which
@@ -290,11 +290,11 @@ static int isStr(const JsonNode *p){
 static int isTrue(const JsonNode *p){
   int res = 0;                    /* Return value */
   switch( p->eJType ){
-    case XJD1_REAL: 
+    case XJD1_REAL:
       res = p->u.r!=0.0;
       break;
 
-    case XJD1_STRING: 
+    case XJD1_STRING:
       res = p->u.z[0]!='\0';
       break;
 
@@ -412,7 +412,7 @@ static int withinOperator(JsonNode *pA, JsonNode *pB){
     case XJD1_ARRAY: {
       int i;
       for(i=0; i<pB->u.ar.nElem; i++){
-        if( xjd1JsonCompare(pA, pB->u.ar.apElem[i])==0 ){
+        if( xjd1JsonCompare(pA, pB->u.ar.apElem[i], 0)==0 ){
           rc = 1;
           break;
         }
@@ -422,7 +422,7 @@ static int withinOperator(JsonNode *pA, JsonNode *pB){
     case XJD1_STRUCT: {
       JsonStructElem *p;
       for(p=pB->u.st.pFirst; p; p=p->pNext){
-        if( xjd1JsonCompare(pA, p->pValue)==0 ){
+        if( xjd1JsonCompare(pA, p->pValue, 0)==0 ){
           rc = 1;
           break;
         }
@@ -474,14 +474,14 @@ JsonNode *xjd1ExprEval(Expr *p){
     /* The x[y] operator. The result depends on the type of value x.
     **
     ** If x is of type XJD1_STRUCT, then expression y is converted to
-    ** a string. The value returned is the value of property y of 
+    ** a string. The value returned is the value of property y of
     ** object x.
     **
     ** If x is of type XJD1_ARRAY, then expression y is converted to
     ** a number. If that number is an integer, then it is the index of
     ** the array element to return.
     **
-    ** If x is of type XJD1_STRING, then it is treated as an array of 
+    ** If x is of type XJD1_STRING, then it is treated as an array of
     ** characters. Processing proceeds as for XJD1_ARRAY.
     */
     case TK_LB: {
@@ -579,9 +579,9 @@ JsonNode *xjd1ExprEval(Expr *p){
       return pRes;
     }
 
-    /* A scalar sub-query. The result of this is the first object 
+    /* A scalar sub-query. The result of this is the first object
     ** returned by executing the query. Or, if the query returns zero
-    ** rows, a NULL value. 
+    ** rows, a NULL value.
     **
     ** TODO: Handle correlated and uncorrelated sub-queries differently.
     */
@@ -637,6 +637,7 @@ JsonNode *xjd1ExprEval(Expr *p){
       }
       break;
     }
+    case TK_LIKEOP:
     case TK_EQEQ:
     case TK_NE:
     case TK_LT:
@@ -645,10 +646,11 @@ JsonNode *xjd1ExprEval(Expr *p){
     case TK_GE: {
       pJLeft = xjd1ExprEval(p->u.bi.pLeft);
       pJRight = xjd1ExprEval(p->u.bi.pRight);
-      c = xjd1JsonCompare(pJLeft, pJRight);
+      c = xjd1JsonCompare(pJLeft, pJRight, (p->eType == TK_LIKEOP));
       xjd1JsonFree(pJLeft);
       xjd1JsonFree(pJRight);
       switch( p->eType ){
+	case TK_LIKEOP:
         case TK_EQEQ: c = c==0;   break;
         case TK_NE:   c = c!=0;   break;
         case TK_LT:   c = c<0;    break;
@@ -658,7 +660,7 @@ JsonNode *xjd1ExprEval(Expr *p){
       }
       pRes->eJType = c ? XJD1_TRUE : XJD1_FALSE;
       break;
-    }      
+    }
     case TK_PLUS: {
       pJLeft = xjd1ExprEval(p->u.bi.pLeft);
       pJRight = xjd1ExprEval(p->u.bi.pRight);
@@ -694,18 +696,18 @@ JsonNode *xjd1ExprEval(Expr *p){
         xjd1JsonToReal(pJRight, &rRight);
 
         switch( p->eType ){
-          case TK_MINUS: 
-            pRes->u.r = rLeft-rRight; 
+          case TK_MINUS:
+            pRes->u.r = rLeft-rRight;
             break;
 
-          case TK_SLASH: 
+          case TK_SLASH:
             if( rRight!=0.0 ){
-              pRes->u.r = rLeft / rRight; 
+              pRes->u.r = rLeft / rRight;
             }
             break;
 
-          case TK_STAR: 
-            pRes->u.r = rLeft * rRight; 
+          case TK_STAR:
+            pRes->u.r = rLeft * rRight;
             break;
         }
         xjd1JsonFree(pJRight);
@@ -755,7 +757,7 @@ JsonNode *xjd1ExprEval(Expr *p){
 
       pRes->eJType = XJD1_REAL;
       switch( p->eType ){
-        case TK_RSHIFT: 
+        case TK_RSHIFT:
           if( iRight>=32 ){
             pRes->u.r = (double)(iLeft<0 ? -1 : 0);
           }else{
