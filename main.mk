@@ -83,7 +83,7 @@ test:	xjd1
 # The shell program
 #
 xjd1:	libxjd1.a $(TOP)/src/shell.c
-	$(TCCX) -o xjd1 $(TOP)/src/shell.c libxjd1.a $(AUXLIB)
+	$(TCCX) -o xjd1 $(TOP)/src/shell.c libxjd1.a $(AUXLIB) -lm
 
 # The library
 #
