@@ -26,6 +26,7 @@
 #define XJD1_NOMEM    3      /* Out of heap memory */
 #define XJD1_UNKNOWN  4      /* Unknown configuration option */
 #define XJD1_SYNTAX   5      /* Syntax error */
+#define XJD1_ERROR_OPEN_DB   6      /* Error opening a database */
 
 #define XJD1_ROW      200    /* Another row available */
 #define XJD1_DONE     201    /* query complete */
@@ -52,6 +53,10 @@ int xjd1_context_delete(xjd1_context*);
 int xjd1_open(xjd1_context*, const char *zURI, xjd1**);
 int xjd1_config(xjd1*, int, ...);
 int xjd1_close(xjd1*);
+
+/* sqlite3 database */
+typedef struct sqlite3 sqlite3;
+int xjd1_open_with_db(xjd1_context*, sqlite3 *db, xjd1**);
 
 /* Operators for xjd1_config() */
 #define XJD1_CONFIG_PARSERTRACE    1
