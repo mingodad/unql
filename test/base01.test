@@ -6,10 +6,12 @@ CREATE COLLECTION abc;
 CREATE COLLECTION def;
 CREATE COLLECTION quote;
 CREATE COLLECTION myupper;
+CREATE COLLECTION mynewline;
 INSERT INTO abc VALUE { name:"abc" };
 INSERT INTO def VALUE { name:"def" };
 INSERT INTO quote VALUE { name:"a \"quoted\" value" };
 INSERT INTO myupper VALUE { key:"KEY" };
+INSERT INTO mynewline VALUE { key:"\tname\taddress\n\tCarl\t56 \"Brooklin\"" };
 .result
 
 .testcase 110
@@ -31,6 +33,10 @@ SELECT FROM myupper WHERE myupper.key LIKE "key";
 .testcase 123
 SELECT FROM myupper WHERE myupper.key ILIKE "key";
 .result {"key":"KEY"}
+
+.testcase 124
+SELECT FROM mynewline;
+.result {"key":"\tname\taddress\n\tCarl\t56 \"Brooklin\""}
 
 .testcase 125
 SELECT FROM abc UNION ALL SELECT FROM def;

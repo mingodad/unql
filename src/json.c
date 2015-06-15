@@ -158,7 +158,18 @@ void renderString(String *pOut, const char *z){
   int n, i, j, c;
   char *zOut;
   for(i=n=0; (c=z[i])!=0; i++, n++){
-    if( c=='"' || c=='\\' ) n++;
+    switch(c)
+    {
+    case '"':
+    case '\\':
+    case '\n':
+    case '\r':
+    case '\t':
+    case '\f':
+    case '\b':
+        ++n;
+        break;
+    }
   }
   xjd1StringAppend(pOut, 0, n+3);
   zOut = xjd1StringText(pOut);
@@ -166,7 +177,38 @@ void renderString(String *pOut, const char *z){
     zOut += xjd1StringLen(pOut);
     zOut[0] = '"';
     for(i=0, j=1; (c=z[i])!=0; i++){
-      if( c=='"' || c=='\\' ) zOut[j++] = '\\';
+      switch(c)
+      {
+        case '"':
+        case '\\':
+          zOut[j++] = '\\';
+          break;
+        case '\n':
+          zOut[j++] = '\\';
+          zOut[j++] = 'n';
+          continue;
+          break;
+        case '\r':
+          zOut[j++] = '\\';
+          zOut[j++] = 'r';
+          continue;
+          break;
+        case '\t':
+          zOut[j++] = '\\';
+          zOut[j++] = 't';
+          continue;
+          break;
+        case '\f':
+          zOut[j++] = '\\';
+          zOut[j++] = 'f';
+          continue;
+          break;
+        case '\b':
+          zOut[j++] = '\\';
+          zOut[j++] = 'b';
+          continue;
+          break;
+      }
       zOut[j++] = c;
     }
     zOut[j++] = '"';
