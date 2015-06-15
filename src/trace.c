@@ -39,6 +39,7 @@ static const struct {
   { TK_BITOR,            "TK_BITOR"           },
   { TK_BITXOR,           "TK_BITXOR"          },
   { TK_BITAND,           "TK_BITAND"          },
+  { TK_ILIKEOP,          "TK_ILIKEOP"         },
   { TK_LIKEOP,           "TK_LIKEOP"          },
   { TK_NE,               "TK_NE"              },
   { TK_EQEQ,             "TK_EQEQ"            },
@@ -77,8 +78,8 @@ static const struct {
   { TK_ALL,              "TK_ALL"             },
   { TK_SELECT,           "TK_SELECT"          },
   { TK_DISTINCT,         "TK_DISTINCT"        },
-  { TK_FROM,             "TK_FROM"            },
   { TK_AS,               "TK_AS"              },
+  { TK_FROM,             "TK_FROM"            },
   { TK_FLATTENOP,        "TK_FLATTENOP"       },
   { TK_GROUP,            "TK_GROUP"           },
   { TK_BY,               "TK_BY"              },
@@ -106,13 +107,9 @@ static const struct {
   { TK_INSERT,           "TK_INSERT"          },
   { TK_INTO,             "TK_INTO"            },
   { TK_VALUE,            "TK_VALUE"           },
+  { TK_ASYNC,            "TK_ASYNC"           },
+  { TK_SYNC,             "TK_SYNC"            },
   { TK_PRAGMA,           "TK_PRAGMA"          },
-  /* End paste of parse_txt.h */
-  { TK_FUNCTION,         "TK_FUNCTION"        },
-  { TK_SPACE,            "TK_SPACE"           },
-  { TK_ILLEGAL,          "TK_ILLEGAL"         },
-  { TK_CREATECOLLECTION, "TK_CREATECOLLECTION"},
-  { TK_DROPCOLLECTION,   "TK_DROPCOLLECTION"  },
 };
 
 /*
@@ -348,6 +345,8 @@ void xjd1TraceExpr(String *pOut, const Expr *p){
     case TK_GE:
     case TK_EQ:
     case TK_NE:
+    case TK_ILIKEOP:
+    case TK_LIKEOP:
     case TK_BITAND:
     case TK_BITOR:
     case TK_BITNOT:

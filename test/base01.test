@@ -4,8 +4,12 @@
 .testcase 100
 CREATE COLLECTION abc;
 CREATE COLLECTION def;
+CREATE COLLECTION quote;
+CREATE COLLECTION myupper;
 INSERT INTO abc VALUE { name:"abc" };
 INSERT INTO def VALUE { name:"def" };
+INSERT INTO quote VALUE { name:"a \"quoted\" value" };
+INSERT INTO myupper VALUE { key:"KEY" };
 .result
 
 .testcase 110
@@ -15,6 +19,18 @@ SELECT FROM abc;
 .testcase 120
 SELECT FROM def;
 .result {"name":"def"}
+
+.testcase 121
+SELECT FROM quote;
+.result {"name":"a \"quoted\" value"}
+
+.testcase 122
+SELECT FROM myupper WHERE myupper.key LIKE "key";
+.result
+
+.testcase 123
+SELECT FROM myupper WHERE myupper.key ILIKE "key";
+.result {"key":"KEY"}
 
 .testcase 125
 SELECT FROM abc UNION ALL SELECT FROM def;

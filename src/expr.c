@@ -638,6 +638,7 @@ JsonNode *xjd1ExprEval(Expr *p){
       break;
     }
     case TK_LIKEOP:
+    case TK_ILIKEOP:
     case TK_EQEQ:
     case TK_NE:
     case TK_LT:
@@ -646,10 +647,11 @@ JsonNode *xjd1ExprEval(Expr *p){
     case TK_GE: {
       pJLeft = xjd1ExprEval(p->u.bi.pLeft);
       pJRight = xjd1ExprEval(p->u.bi.pRight);
-      c = xjd1JsonCompare(pJLeft, pJRight, (p->eType == TK_LIKEOP));
+      c = xjd1JsonCompare(pJLeft, pJRight, (p->eType == TK_ILIKEOP));
       xjd1JsonFree(pJLeft);
       xjd1JsonFree(pJRight);
       switch( p->eType ){
+	case TK_ILIKEOP:
 	case TK_LIKEOP:
         case TK_EQEQ: c = c==0;   break;
         case TK_NE:   c = c!=0;   break;

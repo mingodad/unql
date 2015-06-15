@@ -7,8 +7,7 @@ instead of the previous double quote.
 Added a new function to allow open the xdj1 database with an already opened 
 sqlite3 handler (see main.cpp example).
 
-Added an extra parameter to allow the LIKE operator to make case insensitive 
-string comparisons.
+Added an extra parameter and keyword ILIKE to allow case insensitive string comparisons.
 
 Add code to detect if there is a transaction already in place before try to 
 create one.

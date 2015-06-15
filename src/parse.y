@@ -123,7 +123,7 @@ jvalue(A) ::= NULL.                    {A = jsonType(p,XJD1_NULL);}
 %left BITOR.
 %left BITXOR.
 %left BITAND.
-%left LIKEOP NE EQEQ EQ3 NE3.
+%left ILIKEOP LIKEOP NE EQEQ EQ3 NE3.
 %left WITHIN IN GT LE LT GE.
 %left LSHIFT RSHIFT URSHIFT.
 %left PLUS MINUS.
@@ -310,6 +310,7 @@ expr(A) ::= expr(X) LSHIFT|RSHIFT|URSHIFT(OP) expr(Y).
 expr(A) ::= expr(X) PLUS|MINUS(OP) expr(Y).      {A = biExpr(p,X,@OP,Y);}
 expr(A) ::= expr(X) STAR|SLASH|REM(OP) expr(Y).  {A = biExpr(p,X,@OP,Y);}
 expr(A) ::= expr(X) IN|WITHIN(OP) expr(Y).       {A = biExpr(p,X,@OP,Y);}
+expr(A) ::= expr(X) ILIKEOP(OP) expr(Y).          {A = biExpr(p,X,@OP,Y);}
 expr(A) ::= expr(X) LIKEOP(OP) expr(Y).          {A = biExpr(p,X,@OP,Y);}
 expr(A) ::= BANG(OP) expr(X).                    {A = biExpr(p,X,@OP,0);}
 expr(A) ::= BITNOT(OP) expr(X).                  {A = biExpr(p,X,@OP,0);}

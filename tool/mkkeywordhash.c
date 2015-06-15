@@ -89,6 +89,7 @@ static Keyword aKeywordTable[] = {
   { "INTERSECT",    "TK_INTERSECT",  },
   { "in",           "TK_IN",         },
   { "INTO",         "TK_INTO",       },
+  { "ILIKE",         "TK_ILIKEOP",     },
   { "LIKE",         "TK_LIKEOP",     },
   { "LIMIT",        "TK_LIMIT",      },
   { "NOT",          "TK_NOT",        },
