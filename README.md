@@ -1,6 +1,8 @@
 # unql
  A mirror of http://unql.sqlite.org with some fixes
 
+#This code is bug and experimental, this applies to the origin also
+
 I did changed the string parsing tokenization to use the '\' escape sequence 
 instead of the previous double quote.
 
